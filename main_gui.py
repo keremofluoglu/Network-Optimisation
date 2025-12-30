@@ -3,27 +3,25 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import messagebox
 
-# Grafik ve görselleştirme kütüphaneleri
+# grafik ve görselleştirme kütüphaneleri
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-# Ağ ve veri işleme kütüphaneleri
+# ağ ve veri işleme kütüphaneleri
 import networkx as nx
 import pandas as pd
 
-# ---------------------------------------------------------
 #  PROJE MODÜLLERİNİ YÜKLE
-#  GA, Q-Learning ve metrik hesaplama modülleri
-# ---------------------------------------------------------
+#  GA, Q Learning ve metrik hesaplama modülleri
 try:
-    import genetic_algo     # Genetik Algoritma modülü
-    import qlearning_algo   # Q-Learning modülü
-    import metrics          # Delay, reliability, resource hesapları
+    import genetic_algo     # genetik Algoritma modülü
+    import qlearning_algo   # Q learning modülü
+    import metrics          # delay, reliability, resource hesapları
     print("Modüller başarıyla yüklendi.")
 except ImportError as e:
     print(f"UYARI: Modüller tam yüklenemedi ({e}).")
 
-# Veri dosyaları
+# veri dosyaları
 NODE_FILE = "NodeData.csv"
 EDGE_FILE = "EdgeData.csv"
 
@@ -44,21 +42,17 @@ class NetworkProjectGUI:
         self.setup_ui()
         self.load_and_draw_initial_graph()
         
-    # =====================================================
     #  ARAYÜZ KURULUMU
-    # =====================================================
     def setup_ui(self):
         # Ana çerçeve
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=BOTH, expand=YES)
 
-        # -----------------------------
         # SOL KONTROL PANELİ
-        # -----------------------------
         control_panel = ttk.Frame(main_frame)
         control_panel.pack(side=LEFT, fill=Y, padx=(0, 15))
         
-        # Başlık
+        # başlık
         header_frame = ttk.Frame(control_panel)
         header_frame.pack(fill=X, pady=(0, 10))
         ttk.Label(
@@ -68,9 +62,7 @@ class NetworkProjectGUI:
             bootstyle="primary"
         ).pack(anchor=W)
         
-        # -----------------------------
         # GÜZERGAH SEÇİMİ
-        # -----------------------------
         pnl_route = ttk.Labelframe(
             control_panel,
             text="Güzergah Ayarları",
@@ -87,9 +79,7 @@ class NetworkProjectGUI:
         self.cb_target = ttk.Combobox(pnl_route, state="readonly", bootstyle="info")
         self.cb_target.pack(fill=X, pady=(2, 10))
         
-        # -----------------------------
         # ALGORİTMA SEÇİMİ
-        # -----------------------------
         pnl_algo = ttk.Labelframe(
             control_panel,
             text="Algoritma Motoru",
@@ -115,9 +105,7 @@ class NetworkProjectGUI:
             bootstyle="warning-toolbutton"
         ).pack(fill=X, pady=2)
         
-        # -----------------------------
         # QoS AĞIRLIK AYARLARI
-        # -----------------------------
         pnl_weights = ttk.Labelframe(
             control_panel,
             text="QoS Öncelikleri",
@@ -126,14 +114,12 @@ class NetworkProjectGUI:
         )
         pnl_weights.pack(fill=X, pady=10)
         
-        # Kullanıcı tarafından ayarlanabilen ağırlıklar
+        #kullanıcı tarafından ayarlanabilen ağırlıklar
         self.scale_delay = self.create_meter(pnl_weights, "Gecikme (Delay)", 0.4)
         self.scale_rel   = self.create_meter(pnl_weights, "Güvenilirlik (Rel.)", 0.3)
         self.scale_res   = self.create_meter(pnl_weights, "Kaynak (Resource)", 0.3)
         
-        # -----------------------------
         # SONUÇ PANELİ
-        # -----------------------------
         pnl_result = ttk.Labelframe(
             control_panel,
             text="Analiz Sonuçları",
@@ -167,7 +153,7 @@ class NetworkProjectGUI:
         )
         self.lbl_cost.pack(anchor=W, pady=(5,0))
 
-        # Optimizasyon başlatma butonu
+        # optimizasyon başlatma butonu
         self.btn_run = ttk.Button(
             control_panel,
             text="⚡ OPTİMİZASYONU BAŞLAT",
@@ -177,33 +163,28 @@ class NetworkProjectGUI:
         )
         self.btn_run.pack(fill=X, pady=20)
 
-        # -----------------------------
         # SAĞ PANEL: GRAF GÖRSELİ
-        # -----------------------------
         graph_panel = ttk.Frame(main_frame)
         graph_panel.pack(side=RIGHT, fill=BOTH, expand=YES)
         
-        # Matplotlib ayarları
+        # matplotlib ayarları
         plt.style.use('dark_background')
         self.figure = plt.Figure(figsize=(8, 6), dpi=100, facecolor='#060606')
         self.ax = self.figure.add_subplot(111)
         self.ax.axis('off')
         
-        # Canvas
+        # canvas
         self.canvas = FigureCanvasTkAgg(self.figure, graph_panel)
         self.canvas.get_tk_widget().pack(fill=BOTH, expand=YES)
         
-        # Toolbar
+        # toolbar
         toolbar = NavigationToolbar2Tk(self.canvas, graph_panel)
         toolbar.update()
 
-    # =====================================================
     #  SLIDER (AĞIRLIK) OLUŞTURMA
-    # =====================================================
+    
     def create_meter(self, parent, label, default):
-        """
-        QoS ağırlıklarını ayarlamak için slider oluşturur.
-        """
+
         frame = ttk.Frame(parent)
         frame.pack(fill=X, pady=5)
 
@@ -229,3 +210,4 @@ class NetworkProjectGUI:
         )
         scale.pack(fill=X)
         return scale
+
