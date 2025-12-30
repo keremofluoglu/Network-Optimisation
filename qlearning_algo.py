@@ -133,7 +133,7 @@ def compute_reward(G, u, v):
         w_u * reliability_norm
     )
     
-    # # reward = -cost      reward = +benefit
+    # reward = -cost      reward = +benefit
     return -10.0 * total_cost
 
 
@@ -234,6 +234,7 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
 
 
 
