@@ -32,29 +32,30 @@ Amaç:
 
 Q-Learning (Pekiştirmeli Öğrenme)
 
-Bu projede Q-Learning, ağ yönlendirme probleminde en uygun geçiş politikasını öğrenmek amacıyla kullanılmıştır.
+  Bu projede Q-Learning, ağ yönlendirme probleminde en uygun geçiş politikasını öğrenmek amacıyla kullanılmıştır.
+  
+  Ağdaki her düğüm bir durum (state) olarak modellenmiştir.
+  
+  Bir düğümden komşu bir düğüme geçiş, bir aksiyon (action) olarak tanımlanmıştır.
+  
+  Q tablosu, yalnızca komşu düğümler arasındaki geçişlerin uzun vadeli değerlerini tutar.
+  
+  Q-Learning, deneme–yanılma yoluyla her düğümde hangi komşuya gitmenin uzun vadede daha avantajlı olduğunu öğrenir.
+  Bu süreçte yalnızca anlık maliyetler değil, gelecekte elde edilecek ödüller de dikkate alınır.
 
-Ağdaki her düğüm bir durum (state) olarak modellenmiştir.
-
-Bir düğümden komşu bir düğüme geçiş, bir aksiyon (action) olarak tanımlanmıştır.
-
-Q tablosu, yalnızca komşu düğümler arasındaki geçişlerin uzun vadeli değerlerini tutar.
-
-Q-Learning, deneme–yanılma yoluyla her düğümde hangi komşuya gitmenin uzun vadede daha avantajlı olduğunu öğrenir.
-Bu süreçte yalnızca anlık maliyetler değil, gelecekte elde edilecek ödüller de dikkate alınır.
-
-Genetik Algoritma, çok kriterli maliyet fonksiyonunda kullanılan ağırlıkların optimize edilmesi amacıyla kullanılmıştır.
-
-Ağ yönlendirme problemi; gecikme, bant genişliği kullanımı ve güvenilirlik gibi
-birden fazla ve birbiriyle çelişebilen metriği içermektedir.
-Bu nedenle sabit ağırlıklar yerine, en uygun ağırlık kombinasyonlarının
-evrimsel olarak bulunması hedeflenmiştir.
-
-Her birey, maliyet fonksiyonundaki ağırlıkları temsil eder.
-
-Uygunluk (fitness) değeri, elde edilen yolların toplam performansına göre hesaplanır.
-
-Seçilim, çaprazlama ve mutasyon işlemleriyle daha iyi çözümler üretilir.
+Genetik Algoritma
+  çok kriterli maliyet fonksiyonunda kullanılan ağırlıkların optimize edilmesi amacıyla kullanılmıştır.
+  
+  Ağ yönlendirme problemi; gecikme, bant genişliği kullanımı ve güvenilirlik gibi
+  birden fazla ve birbiriyle çelişebilen metriği içermektedir.
+  Bu nedenle sabit ağırlıklar yerine, en uygun ağırlık kombinasyonlarının
+  evrimsel olarak bulunması hedeflenmiştir.
+  
+  Her birey, maliyet fonksiyonundaki ağırlıkları temsil eder.
+  
+  Uygunluk (fitness) değeri, elde edilen yolların toplam performansına göre hesaplanır.
+  
+  Seçilim, çaprazlama ve mutasyon işlemleriyle daha iyi çözümler üretilir.
 
 Genetik Algoritma sonucunda elde edilen en iyi ağırlıklar,
 Q-Learning ödül fonksiyonunda kullanılarak öğrenme süreci yönlendirilir.
