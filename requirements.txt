@@ -1,6 +1,5 @@
-site
-ttkbootstrap
-tkinter
+numpy
+pandas
 matplotlib
 networkx
-pandas
+ttkbootstrap
