@@ -4,20 +4,12 @@ import numpy as np
 import math
 import sys
 
-# ============================================================
-#  AĞ OPTİMİZASYONU – MALİYET VE METRİK HESAPLAMA MODÜLÜ
-#
-#  Bu modül:
-#   - Ağ grafiğini CSV dosyalarından oluşturur
-#   - QoS metriklerini (delay, reliability, resource) hesaplar
-#   - Çok kriterli weighted-sum cost fonksiyonunu uygular
-#   - Demand bandwidth kısıtını hard constraint olarak ele alır
-# ============================================================
+
+#MALİYET VE METRİK HESAPLAMA MODÜLÜ
 
 
-# ============================================================
+
 # 1. GRAPH OLUŞTURMA
-# ============================================================
 def build_graph_from_csv(node_csv, edge_csv):
     """
     Node ve Edge CSV dosyalarından NetworkX graph oluşturur.
@@ -39,10 +31,9 @@ def build_graph_from_csv(node_csv, edge_csv):
         print(f"HATA: Dosyalar okunurken sorun oluştu: {e}")
         return None
 
-    # -------- NODE EKLEME --------
-    # Her node için:
-    #  - işlem gecikmesi (s_ms)
-    #  - node güvenilirliği (r_node)
+    #NODE EKLEME
+    #işlem gecikmesi (s_ms)
+    #node güvenilirliği (r_node)
     for _, n in nodes.iterrows():
         G.add_node(
             int(n["node_id"]),
@@ -50,11 +41,11 @@ def build_graph_from_csv(node_csv, edge_csv):
             r_node=float(n["r_node"])
         )
 
-    # -------- EDGE EKLEME --------
-    # Her link için:
-    #  - bant genişliği kapasitesi
-    #  - link gecikmesi
-    #  - link güvenilirliği
+    #EDGE EKLEME
+    #Her link için:
+    #bant genişliği kapasitesi
+    #link gecikmesi
+    #link güvenilirliği
     for _, e in edges.iterrows():
         G.add_edge(
             int(e["src"]),
@@ -68,13 +59,10 @@ def build_graph_from_csv(node_csv, edge_csv):
     return G
 
 
-# ============================================================
-# 2. DEMAND VERİLERİNİ YÜKLEME
-# ============================================================
+# 2. DEMAND VERİLERİNİ YÜKLEM
+
 def load_demands(demand_csv):
-    """
-    Trafik taleplerini (src, dst, demand_mbps) okur.
-    """
+
     try:
         return pd.read_csv(demand_csv, sep=';', decimal=',')
     except FileNotFoundError:
@@ -85,9 +73,7 @@ def load_demands(demand_csv):
         return None
 
 
-# ============================================================
 # 3. YOL GEÇERLİLİK KONTROLÜ
-# ============================================================
 def is_valid_path(G, path):
     """
     Yolun fiziksel olarak ağda var olup olmadığını kontrol eder.
@@ -101,19 +87,9 @@ def is_valid_path(G, path):
     return True
 
 
-# ============================================================
-# 4. METRIC: TOPLAM GECİKME
-# ============================================================
+# 4.TOPLAM GECİKME
 def total_delay(G, path):
-    """
-    Toplam Gecikme =
-      - Link gecikmeleri
-      - Ara düğüm işlem gecikmeleri
 
-    NOT:
-    Kaynak (S) ve hedef (D) düğümlerin işlem gecikmesi
-    literatüre uygun olarak hesaba katılmaz.
-    """
     delay = 0.0
     
     # Link gecikmeleri
@@ -128,18 +104,9 @@ def total_delay(G, path):
     return delay
 
 
-# ============================================================
-# 5. METRIC: GÜVENİLİRLİK MALİYETİ
-# ============================================================
+# 5.GÜVENİLİRLİK MALİYETİ
 def reliability_cost(G, path):
-    """
-    Güvenilirlik maliyeti:
-    -log(p) dönüşümü ile hesaplanır.
 
-    Bu dönüşüm sayesinde:
-      - Çarpımsal güvenilirlikler toplamsal maliyete çevrilir
-      - Düşük güvenilirlik daha yüksek maliyet üretir
-    """
     cost = 0.0
 
     # Link güvenilirliği
@@ -155,17 +122,9 @@ def reliability_cost(G, path):
     return cost
 
 
-# ============================================================
-# 6. METRIC: AĞ KAYNAK KULLANIMI
-# ============================================================
+# 6. AĞ KAYNAK KULLANIMI
 def resource_cost(G, path):
-    """
-    Kaynak maliyeti:
-      cost = 1000 / bandwidth
 
-    Düşük bant genişliği →
-    Daha yüksek kaynak maliyeti üretir.
-    """
     cost = 0.0
     for i in range(len(path) - 1):
         cap = G.edges[path[i], path[i+1]]["capacity_mbps"]
@@ -173,9 +132,7 @@ def resource_cost(G, path):
     return cost
 
 
-# ============================================================
-# 7. WEIGHTED SUM – TOTAL COST
-# ============================================================
+# 7.TOTAL COST
 def total_cost(G, path, Wd, Wr, Wres):
     """
     Çok kriterli maliyet fonksiyonu.
@@ -196,16 +153,9 @@ def total_cost(G, path, Wd, Wr, Wres):
     return (Wd * c_delay) + (Wr * c_rel) + (Wres * c_res)
 
 
-# ============================================================
 # 8. OPTİMİZASYON DÖNGÜSÜ
-# ============================================================
 def run_optimization(G, demands, weight_sets):
-    """
-    Her demand için:
-      - Minimum bandwidth şartını sağlayan alt graf oluşturulur
-      - Bu kısıt HARD CONSTRAINT olarak ele alınır
-      - Uygun yol yoksa demand elenir
-    """
+
     results = []
     print(f"{len(demands)} adet talep işleniyor...")
 
@@ -218,7 +168,7 @@ def run_optimization(G, demands, weight_sets):
             print("Hata: demanddata.csv sütun isimleri hatalı")
             return pd.DataFrame()
 
-        # -------- HARD CONSTRAINT --------
+        #HARD CONSTRAINT
         # Talep edilen bandwidth’i karşılamayan linkler devre dışı bırakılır
         valid_edges = [
             (u, v) for u, v, data in G.edges(data=True)
@@ -250,3 +200,4 @@ def run_optimization(G, demands, weight_sets):
             })
 
     return pd.DataFrame(results)
+
