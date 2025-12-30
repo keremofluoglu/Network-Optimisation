@@ -157,7 +157,6 @@ def train_q_learning(G, demands):
         if demands.empty:
             break
         
-        # rastgele bir demand seçilir
         d = demands.sample(1).iloc[0]
         current = int(d["src"])
         target = int(d["dst"])
@@ -316,6 +315,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[ERROR] Dosya kaydetme hatasi: {e}")
 """
+
 
 
 
