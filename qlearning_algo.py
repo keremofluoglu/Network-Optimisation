@@ -6,8 +6,8 @@ from collections import defaultdict
 
 # Q LEARNING TABANLI AĞ OPTİMİSATİON ALGORİTMASI
 
-# eğitim parametreleri (GUI için düşük tutulmuştur)
-EPISODES = 500          # 20 000 den 500 e indirild
+# eğitim parametreleri 
+EPISODES = 500          # 20 000 den 500 e indirild (gui için
 MAX_STEPS = 50          # 50 den 20 ye indirildi
 
 # Q Learning parametreleri
@@ -234,6 +234,7 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
 
 
 
