@@ -4,20 +4,10 @@ import random
 import math
 from collections import defaultdict
 
-# Q-LEARNING TABANLI AĞ YÖNLENDİRME ALGORİTMASI
-#
-# Bu modül:
-#   Ağ yönlendirme problemini Reinforcement Learning ile çözer
-#   Çok kriterli cost modelini reward fonksiyonuna dönüştürür
-#   Demand bandwidth kısıtını hard constraint olarak uygular
-#   Tek bir Q-tablosu ile farklı trafik taleplerini destekler
-
-
-
-# 1. GLOBAL AYARLAR ve HİPERPARAMETRELER
+# Q LEARNING TABANLI AĞ OPTİMİSATİON ALGORİTMASI
 
 # Eğitim parametreleri (GUI için düşük tutulmuştur)
-EPISODES = 500          # Eğitim turu sayısı
+EPISODES = 500          # Eğitim turu sayısı   20 000 den 500 e indirild
 MAX_STEPS = 50          # Bir rotadaki maksimum hop sayısı
 
 # Q-Learning parametreleri
@@ -31,32 +21,30 @@ EPSILON_END = 0.05      # Minimum keşif oranı
 EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
 
 
-# 2. GLOBAL DEĞİŞKENLER
-
 # Q Tablosu
 # Q[(current_node, target_node)][next_node] = Q değeri
 Q = defaultdict(lambda: defaultdict(float))
 
 # Cost fonksiyonu ağırlıkları (GUI üzerinden değiştirilebilir)
-w_d = 1.0   # Delay ağırlığı
-w_r = 1.0   # Resource ağırlığı
-w_u = 1.0   # Reliability ağırlığı
+w_d = 1.0   
+w_r = 1.0   
+w_u = 1.0  
+
+w_total = w_d + w_r + w_u         # Wdelay + Wreliability + Wresource = 1 
+
+w_d = w_d/w_total
+w_r = w_r/w_total
+w_u = w_u/w_total
 
 
-# 3. NORMALİZASYON ÜST SINIRLARI
-
-# Farklı metriklerin aynı reward ölçeğinde etkili olması için maksimum değerler istatistiksel olarak belirlenir
+#NORMALİZASYON ÜST SINIRLARI
 MAX_DELAY = 100.0
 MAX_RESOURCE = 100.0
 MAX_RELIABILITY = 10.0
 
 
-# 4. GRAPH OLUŞTURMA
 def build_graph_from_csv(node_csv, edge_csv):
-    """
-    Node ve Edge CSV dosyalarından NetworkX graph oluşturur
-    ve normalizasyon için üst sınırları hesaplar.
-    """
+
     print(f"Veriler yükleniyor: {node_csv} ve {edge_csv}...")
     G = nx.Graph()
 
@@ -64,7 +52,6 @@ def build_graph_from_csv(node_csv, edge_csv):
         nodes = pd.read_csv(node_csv, sep=';', decimal=',')
         edges = pd.read_csv(edge_csv, sep=';', decimal=',')
         
-        #NORMALİZASYON ÜST SINIRLARI
         global MAX_DELAY, MAX_RESOURCE, MAX_RELIABILITY
         
         # Delay için %95 persentil kullanılır
@@ -110,18 +97,16 @@ def build_graph_from_csv(node_csv, edge_csv):
     return G
 
 
-# 5. DEMAND VERİLERİ
+# DEMAND YÜKLEME
 def load_demands(demand_csv):
-    """
-    Trafik taleplerini (src, dst, demand_mbps) yükler.
-    """
+
     try:
         return pd.read_csv(demand_csv, sep=';', decimal=',')
     except Exception:
         return None
 
 
-# 6. REWARD (ÖDÜL) FONKSİYONU
+#REWARD FONKSİYONU
 
 def compute_reward(G, u, v):
 
@@ -130,35 +115,32 @@ def compute_reward(G, u, v):
 
     #HAM METRİKLER
     delay = edge["delay_ms"] + node["s_ms"]
-    resource = 1000 / edge["capacity_mbps"] if edge["capacity_mbps"] > 0 else 9999
+    resource = 1000 / edge["capacity_mbps"] if edge["capacity_mbps"] > 0 else 9999         # 1gbps yerine 1000mbps
     
     r_link = edge["r_link"] if edge["r_link"] > 0 else 0.0001
     r_node = node["r_node"] if node["r_node"] > 0 else 0.0001
-    reliability = -math.log(r_link) - math.log(r_node)
+    reliability = -math.log(r_link) - math.log(r_node)             #reliabilityCost(P)=X(i,j)∈P[−log( RLinkReliabilityij)]+Xk∈P[−log(N odeReliabilityk)]
 
     #NORMALİZASYON
     delay_norm = delay / MAX_DELAY if MAX_DELAY > 0 else 0
     resource_norm = resource / MAX_RESOURCE if MAX_RESOURCE > 0 else 0
     reliability_norm = reliability / MAX_RELIABILITY if MAX_RELIABILITY > 0 else 0
 
-    #TOTAL COST
+    # hepsi minimize
     total_cost = (
         w_d * delay_norm +
         w_r * resource_norm +
         w_u * reliability_norm
     )
     
-    # Maliyet minimizasyonu → Reward maksimizasyonu
+    # # reward = -cost      reward = +benefit
     return -10.0 * total_cost
 
 
-# 7. HARD CONSTRAINT FEASIBLE NEIGHBORS
+#HARD CONSTRAINT
 def feasible_neighbors(G, current_node, demand_bw):
-    """
-    Minimum bandwidth talebini karşılayan komşuları döndürür.
-    Bu kısıt ödül fonksiyonuna değil,
-    doğrudan aksiyon uzayına uygulanır (hard constraint).
-    """
+   
+    #Minimum bandwidth talebini karşılayan komşuları döndürür.
     valid_neighbors = []
     for n in G.neighbors(current_node):
         if G[current_node][n]["capacity_mbps"] >= demand_bw:
@@ -166,13 +148,12 @@ def feasible_neighbors(G, current_node, demand_bw):
     return valid_neighbors
 
 
-# 8. Q-LEARNING EĞİTİM DÖNGÜS
-
 def train_q_learning(G, demands):
     
     if isinstance(demands, pd.Series):
         demands = pd.DataFrame([demands])
 
+    #epsilon decay
     epsilon = EPSILON_START
 
     for episode in range(EPISODES):
@@ -214,7 +195,7 @@ def train_q_learning(G, demands):
                 if vals:
                     best_future = max(vals)
 
-            # Q-GÜNCELLEME
+            # Q GÜNCELLEME
             Q[(current, target)][next_node] += ALPHA * (
                 reward + GAMMA * best_future - Q[(current, target)][next_node]
             )
@@ -227,12 +208,10 @@ def train_q_learning(G, demands):
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
 
 
-# 9. POLICY ÇIKARIMI ve ROTA BULM
+#POLİCY TABLOSU VE ROTA BULMA
 
 def extract_policy(Q):
-    """
-    Q-tablosundan greedy policy çıkarır.
-    """
+
     policy = {}
     for (current, target), actions in Q.items():
         if actions:
@@ -241,9 +220,7 @@ def extract_policy(Q):
 
 
 def get_best_path(policy, src, dst, max_hops=50):
-    """
-    Öğrenilmiş policy üzerinden greedy şekilde rota oluşturur.
-    """
+
     path = [src]
     current = src
 
@@ -257,4 +234,5 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
 
