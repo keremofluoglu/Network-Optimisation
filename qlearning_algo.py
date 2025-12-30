@@ -137,7 +137,7 @@ def compute_reward(G, u, v):
 #HARD CONSTRAINT
 def feasible_neighbors(G, current_node, demand_bw):
    
-    #minimum bandwidth talebini karşılayan komşuları döndürür.
+    #minimum bandwidth talebini karşılayan komşuları döndürür
     valid_neighbors = []
     for n in G.neighbors(current_node):
         if G[current_node][n]["capacity_mbps"] >= demand_bw:
@@ -150,7 +150,7 @@ def train_q_learning(G, demands):
     if isinstance(demands, pd.Series):
         demands = pd.DataFrame([demands])
 
-    #epsilon decay
+    
     epsilon = EPSILON_START
 
     for episode in range(EPISODES):
@@ -201,7 +201,7 @@ def train_q_learning(G, demands):
             if current == target:
                 break
         
-        # episode sonunda epsilon azaltılır
+        #epsilon decay
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
 
 
@@ -316,6 +316,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[ERROR] Dosya kaydetme hatasi: {e}")
 """
+
 
 
 
