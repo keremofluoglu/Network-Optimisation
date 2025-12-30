@@ -6,16 +6,16 @@ from collections import defaultdict
 
 # Q LEARNING TABANLI AĞ OPTİMİSATİON ALGORİTMASI
 
-# Eğitim parametreleri (GUI için düşük tutulmuştur)
+# eğitim parametreleri (GUI için düşük tutulmuştur)
 EPISODES = 500          # 20 000 den 500 e indirild
 MAX_STEPS = 50          # 50 den 20 ye indirildi
 
-# Q-Learning parametreleri
+# Q Learning parametreleri
 ALPHA = 0.1             # Öğrenme hızı 
 GAMMA = 0.9             # discount
 
 #EPSILON-GREEDY STRATEJİSİ
-# Keşif  Sömürü dengesi
+# keşif  Sömürü dengesi
 EPSILON_START = 1.0     # Başlangıçta %100 rastgele
 EPSILON_END = 0.05      # Minimum keşif oranı
 EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
@@ -25,7 +25,7 @@ EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
 # Q[(current_node, target_node)][next_node] = Q değeri
 Q = defaultdict(lambda: defaultdict(float))
 
-# Cost fonksiyonu ağırlıkları (GUI üzerinden değiştirilebilir)
+# cost fonksiyonu ağırlıkları (GUI üzerinden değiştirilebilir)
 w_d = 1.0   
 w_r = 1.0   
 w_u = 1.0  
@@ -54,15 +54,15 @@ def build_graph_from_csv(node_csv, edge_csv):
         
         global MAX_DELAY, MAX_RESOURCE, MAX_RELIABILITY
         
-        # Delay için %95 persentil kullanılır
+        # delay için %95 persentil kullanılır
         MAX_DELAY = nodes["s_ms"].quantile(0.95) + edges["delay_ms"].quantile(0.95)
         
-        # Resource maliyeti için düşük kapasiteye göre üst sınır
+        # resource maliyeti için düşük kapasiteye göre üst sınır
         min_cap = edges["capacity_mbps"].quantile(0.05)
         if min_cap > 0:
             MAX_RESOURCE = 1000 / min_cap
             
-        # Reliability için en kötü olası senaryo
+        # reliability için en kötü olası senaryo
         min_r_link = edges["r_link"].quantile(0.05)
         min_r_node = nodes["r_node"].quantile(0.05)
         if min_r_link > 0 and min_r_node > 0:
@@ -75,7 +75,7 @@ def build_graph_from_csv(node_csv, edge_csv):
         print(f"HATA: {e}")
         return None
 
-    # Node ekleme
+    # node ekleme
     for _, n in nodes.iterrows():
         G.add_node(
             int(n["node_id"]),
@@ -83,7 +83,7 @@ def build_graph_from_csv(node_csv, edge_csv):
             r_node=float(n["r_node"])
         )
 
-    # Edge ekleme
+    # edge ekleme
     for _, e in edges.iterrows():
         G.add_edge(
             int(e["src"]),
@@ -140,7 +140,7 @@ def compute_reward(G, u, v):
 #HARD CONSTRAINT
 def feasible_neighbors(G, current_node, demand_bw):
    
-    #Minimum bandwidth talebini karşılayan komşuları döndürür.
+    #minimum bandwidth talebini karşılayan komşuları döndürür.
     valid_neighbors = []
     for n in G.neighbors(current_node):
         if G[current_node][n]["capacity_mbps"] >= demand_bw:
@@ -160,7 +160,7 @@ def train_q_learning(G, demands):
         if demands.empty:
             break
         
-        # Rastgele bir demand seçilir
+        # rastgele bir demand seçilir
         d = demands.sample(1).iloc[0]
         current = int(d["src"])
         target = int(d["dst"])
@@ -173,7 +173,7 @@ def train_q_learning(G, demands):
 
             #EPSILON GREEDY
             if random.random() < epsilon:
-                next_node = random.choice(neighbors)   # Keşfet
+                next_node = random.choice(neighbors)   # keşfetme
             else:
                 if (current, target) in Q and Q[(current, target)]:
                     next_node = max(
@@ -186,7 +186,7 @@ def train_q_learning(G, demands):
             # ödül hesaplama
             reward = compute_reward(G, current, next_node)
             if next_node == target:
-                reward += 100  # Hedefe ulaşma bonusu
+                reward += 100  # hedefe ulaşma bonusu
 
             #GELECEK ÖDÜL
             best_future = 0
@@ -204,7 +204,7 @@ def train_q_learning(G, demands):
             if current == target:
                 break
         
-        # Episode sonunda epsilon azaltılır
+        # episode sonunda epsilon azaltılır
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
 
 
@@ -234,6 +234,7 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
 
 
 
