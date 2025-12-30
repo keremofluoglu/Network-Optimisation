@@ -1,0 +1,221 @@
+import networkx as nx
+import pandas as pd
+import numpy as np
+import math
+import sys
+
+# ============================================================
+# Optimizasyon Metriklerinin Hesaplanması
+# ============================================================
+
+# ---------- 1. GRAPH FROM  ----------
+def build_graph_from_csv(node_csv, edge_csv):
+    print(f"Veriler yükleniyor: {node_csv} ve {edge_csv}...")
+    G = nx.Graph()
+
+    try:
+        # CSV okuma ayarları (Noktalı virgül ve virgül ondalık ayracı)
+        nodes = pd.read_csv(node_csv, sep=';', decimal=',')
+        edges = pd.read_csv(edge_csv, sep=';', decimal=',')
+    except FileNotFoundError:
+        print(f"KRİTİK HATA: '{node_csv}' veya '{edge_csv}' bulunamadı.")
+        print("Lütfen dosya isimlerinin tamamen küçük harf olduğundan emin olun.")
+        return None
+    except Exception as e:
+        print(f"HATA: Dosyalar okunurken sorun oluştu: {e}")
+        return None
+
+    # Düğümleri Ekle
+    for _, n in nodes.iterrows():
+        G.add_node(
+            int(n["node_id"]),
+            s_ms=float(n["s_ms"]),
+            r_node=float(n["r_node"])
+        )
+
+    # Kenarları Ekle
+    for _, e in edges.iterrows():
+        G.add_edge(
+            int(e["src"]),
+            int(e["dst"]),
+            capacity_mbps=float(e["capacity_mbps"]),
+            delay_ms=float(e["delay_ms"]),
+            r_link=float(e["r_link"])
+        )
+    
+    print(f"Ağ Yüklendi: {G.number_of_nodes()} Düğüm, {G.number_of_edges()} Kenar.")
+    return G
+
+# ---------- 2. LOAD DEMANDS (ZORUNLU) ----------
+def load_demands(demand_csv):
+    try:
+        return pd.read_csv(demand_csv, sep=';', decimal=',')
+    except FileNotFoundError:
+        print(f"KRİTİK HATA: '{demand_csv}' dosyası bulunamadı.")
+        return None
+    except Exception as e:
+        print(f"HATA: Talep dosyası okunurken hata: {e}")
+        return None
+
+# ---------- 3. YOL KONTROLÜ----------
+def is_valid_path(G, path):
+    """Yolun fiziksel olarak kopuk olup olmadığını kontrol eder."""
+    if not path or len(path) < 2: return False
+    for i in range(len(path) - 1):
+        if not G.has_edge(path[i], path[i+1]):
+            return False
+    return True
+
+# ---------- 4. METRIC: TOPLAM GECİKME ----------
+def total_delay(G, path):
+    """
+    Toplam Gecikme = Link Gecikmeleri + Ara Düğüm İşlem Süreleri
+    KURAL: Kaynak (S) ve Hedef (D) işlem süreleri toplama DAHİL EDİLMEZ.
+    """
+    delay = 0.0
+    
+    # Linkler
+    for i in range(len(path) - 1):
+        delay += G.edges[path[i], path[i+1]]["delay_ms"]
+
+    # Düğümler (S ve D hariç)
+    if len(path) > 2:
+        for n in path[1:-1]: # İlk ve son elemanı atla
+            delay += G.nodes[n]["s_ms"]
+
+    return delay
+
+# [cite_start]---------- 5. METRIC: GÜVENİLİRLİK MALİYETİ ----------
+def reliability_cost(G, path):
+    """
+    Güvenilirlik Maliyeti = Sum(-log(LinkRel)) + Sum(-log(NodeRel))
+    """
+    cost = 0.0
+
+    # Linkler
+    for i in range(len(path) - 1):
+        r = G.edges[path[i], path[i+1]]["r_link"]
+        cost += -math.log(r) if r > 0 else 100
+
+    # Düğümler
+    for n in path:
+        r = G.nodes[n]["r_node"]
+        cost += -math.log(r) if r > 0 else 100
+
+    return cost
+
+# [cite_start]---------- 6. METRIC: AĞ KAYNAK KULLANIMI ----------
+def resource_cost(G, path):
+    """
+    Kaynak Maliyeti = Sum(1000 Mbps / Bandwidth)
+    """
+    cost = 0.0
+    for i in range(len(path) - 1):
+        cap = G.edges[path[i], path[i+1]]["capacity_mbps"]
+        # Formül: 1000 / Kapasite
+        cost += (1000.0 / cap) if cap > 0 else 1000.0
+    return cost
+
+# ---------- 7. WEIGHTED SUM COST (AĞIRLIKLI TOPLAM YÖNTEMİ))  ----------
+def total_cost(G, path, Wd, Wr, Wres):
+    """
+    Algoritmalar tarafından çağrılacak ana fonksiyon.
+    Weighted Sum Method uygular.
+    """
+    # Sigorta: Yol kopuksa hesaplama yapma, ceza ver.
+    if not is_valid_path(G, path):
+        return 999999.0
+
+    c_delay = total_delay(G, path)
+    c_rel = reliability_cost(G, path)
+    c_res = resource_cost(G, path)
+    
+    return (Wd * c_delay) + (Wr * c_rel) + (Wres * c_res)
+
+# ---------- 8. RUN OPTIMIZATION LOOP ----------
+def run_optimization(G, demands, weight_sets):
+    results = []
+    print(f"{len(demands)} adet talep işleniyor...")
+
+    for idx, d in demands.iterrows():
+        try:
+            src = int(d["src"])
+            dst = int(d["dst"])
+            bw  = float(d["demand_mbps"])
+        except KeyError:
+            print("Hata: demanddata.csv sütun isimleri hatalı (src;dst;demand_mbps olmalı)")
+            return pd.DataFrame()
+
+        # Talep edilen bant genişliğini sağlamayan linkleri GEÇİCİ olarak ele
+        valid_edges = [(u,v) for u,v,data in G.edges(data=True) if data['capacity_mbps'] >= bw]
+        Gf = G.edge_subgraph(valid_edges).copy()
+        
+        if not nx.has_path(Gf, src, dst):
+            print(f"Uyarı: {src} -> {dst} için {bw} Mbps kapasiteli yol bulunamadı.")
+            continue
+
+        # Referans yol (En Kısa Yol)
+        path = nx.shortest_path(Gf, src, dst, weight="delay_ms")
+
+        # Farklı ağırlık senaryoları için hesaplama
+        for (Wd, Wr, Wres) in weight_sets:
+            cost = total_cost(G, path, Wd, Wr, Wres)
+
+            results.append({
+                "Request_ID": idx+1,
+                "Source": src,
+                "Destination": dst,
+                "Demand_Mbps": bw,
+                "W_Delay": Wd,
+                "W_Reliability": Wr,
+                "W_Resource": Wres,
+                "Total_Cost": round(cost, 4),
+                "Path_Length": len(path)
+            })
+
+    return pd.DataFrame(results)
+
+# =========================
+# FINAL MAIN (STRICT EXECUTION )
+# =========================
+if __name__ == "__main__":
+    print("--- OPTIMIZATION MODULE (STRICT MODE) ---")
+
+    # nodedata.csv ve edgedata.csv aranacak
+    G = build_graph_from_csv("nodedata.csv", "edgedata.csv")
+    
+    if G is None:
+        print("PROGRAM DURDURULDU: Ağ verisi eksik.")
+        sys.exit(1)
+
+    # 2. Talepleri Yükle 
+    # demanddata.csv aranacak
+    demands = load_demands("demanddata.csv")
+    
+    if demands is None or demands.empty:
+        print("PROGRAM DURDURULDU: demanddata.csv eksik veya boş.")
+        sys.exit(1)
+
+    # 3. Ağırlık Senaryoları (Proje İsteri)
+    weight_sets = [
+        (0.33, 0.33, 0.34), # Dengeli
+        (0.80, 0.10, 0.10), # Gecikme Odaklı
+        (0.10, 0.80, 0.10), # Güvenlik Odaklı
+        (0.10, 0.10, 0.80)  # Kaynak Odaklı
+    ]
+
+    # 4. Analizi Çalıştır
+    results = run_optimization(G, demands, weight_sets)
+    
+    # 5. Sonuçları Kaydet
+    if not results.empty:
+        output_file = "OptimizationResults.csv"
+        results.to_csv(output_file, index=False, sep=';', decimal=',')
+        print(f"\nBAŞARILI: Sonuçlar '{output_file}' dosyasına kaydedildi.")
+        print("-" * 60)
+        print(results.head().to_string())
+        print("-" * 60)
+    else:
+        print("Hiçbir talep için uygun yol bulunamadı.")
+
+    print("İşlem Tamamlandı.")

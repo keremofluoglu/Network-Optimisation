@@ -1,0 +1,6 @@
+site
+ttkbootstrap
+tkinter
+matplotlib
+networkx
+pandas
