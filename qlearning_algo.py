@@ -9,13 +9,10 @@ from collections import defaultdict
 # eğitim parametreleri 
 EPISODES = 500          # 20 000 den 500 e indirild (gui için
 MAX_STEPS = 50          # 50 den 20 ye indirildi
-
-# Q Learning parametreleri
 ALPHA = 0.1             # Öğrenme hızı 
 GAMMA = 0.9             # discount
 
-#EPSILON GREEDY STRATEJİSİ
-# keşif  Sömürü dengesi
+# keşif dengesi
 EPSILON_START = 1.0     # Başlangıçta %100 rastgele
 EPSILON_END = 0.05      # Minimum keşif oranı
 EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
@@ -25,7 +22,7 @@ EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
 # Q[(current_node, target_node)][next_node] = Q değeri
 Q = defaultdict(lambda: defaultdict(float))
 
-# cost fonksiyonu ağırlıkları (GUI üzerinden değiştirilebilir)
+# cost fonksiyonu ağırlıkları 
 w_d = 1.0   
 w_r = 1.0   
 w_u = 1.0  
@@ -319,6 +316,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[ERROR] Dosya kaydetme hatasi: {e}")
 """
+
 
 
 
