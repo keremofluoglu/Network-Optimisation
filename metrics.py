@@ -9,18 +9,16 @@ import sys
 
 
 
-# 1. GRAPH OLUŞTURMA
+#GRAPH OLUŞTURMA
 def build_graph_from_csv(node_csv, edge_csv):
-    """
-    Node ve Edge CSV dosyalarından NetworkX graph oluşturur.
-    """
+
     print(f"Veriler yükleniyor: {node_csv} ve {edge_csv}...")
     G = nx.Graph()
 
     try:
         # CSV okuma ayarları:
-        # - Noktalı virgül ayırıcı
-        # - Virgül ondalık gösterimi
+        # Noktalı virgül ayırıcı
+        # Virgül ondalık gösterimi
         nodes = pd.read_csv(node_csv, sep=';', decimal=',')
         edges = pd.read_csv(edge_csv, sep=';', decimal=',')
     except FileNotFoundError:
@@ -59,7 +57,7 @@ def build_graph_from_csv(node_csv, edge_csv):
     return G
 
 
-# 2. DEMAND VERİLERİNİ YÜKLEM
+# DEMAND VERİLERİNİ YÜKLEM
 
 def load_demands(demand_csv):
 
@@ -73,7 +71,7 @@ def load_demands(demand_csv):
         return None
 
 
-# 3. YOL GEÇERLİLİK KONTROLÜ
+# YOL GEÇERLİLİK KONTROLÜ
 def is_valid_path(G, path):
     """
     Yolun fiziksel olarak ağda var olup olmadığını kontrol eder.
@@ -87,7 +85,7 @@ def is_valid_path(G, path):
     return True
 
 
-# 4.TOPLAM GECİKME
+# TOPLAM GECİKME
 def total_delay(G, path):
 
     delay = 0.0
@@ -104,7 +102,7 @@ def total_delay(G, path):
     return delay
 
 
-# 5.GÜVENİLİRLİK MALİYETİ
+# GÜVENİLİRLİK MALİYETİ
 def reliability_cost(G, path):
 
     cost = 0.0
@@ -122,7 +120,7 @@ def reliability_cost(G, path):
     return cost
 
 
-# 6. AĞ KAYNAK KULLANIMI
+# AĞ KAYNAK KULLANIMI
 def resource_cost(G, path):
 
     cost = 0.0
@@ -132,7 +130,7 @@ def resource_cost(G, path):
     return cost
 
 
-# 7.TOTAL COST
+# TOTAL COST
 def total_cost(G, path, Wd, Wr, Wres):
     """
     Çok kriterli maliyet fonksiyonu.
@@ -153,7 +151,7 @@ def total_cost(G, path, Wd, Wr, Wres):
     return (Wd * c_delay) + (Wr * c_rel) + (Wres * c_res)
 
 
-# 8. OPTİMİZASYON DÖNGÜSÜ
+# OPTİMİZASYON DÖNGÜSÜ
 def run_optimization(G, demands, weight_sets):
 
     results = []
@@ -200,4 +198,5 @@ def run_optimization(G, demands, weight_sets):
             })
 
     return pd.DataFrame(results)
+
 
