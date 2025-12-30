@@ -29,8 +29,11 @@ Amaç:
   Toplam maliyeti minimize eden,
   Farklı trafik taleplerine uyum sağlayabilen,
   Etkin yönlendirme yolları bulmak.
+  
 
 Q-Learning (Pekiştirmeli Öğrenme)
+
+
 
   Bu projede Q-Learning, ağ yönlendirme probleminde en uygun geçiş politikasını öğrenmek amacıyla kullanılmıştır.
   
@@ -43,7 +46,11 @@ Q-Learning (Pekiştirmeli Öğrenme)
   Q-Learning, deneme–yanılma yoluyla her düğümde hangi komşuya gitmenin uzun vadede daha avantajlı olduğunu öğrenir.
   Bu süreçte yalnızca anlık maliyetler değil, gelecekte elde edilecek ödüller de dikkate alınır.
 
+
+
+
 Genetik Algoritma
+
   çok kriterli maliyet fonksiyonunda kullanılan ağırlıkların optimize edilmesi amacıyla kullanılmıştır.
   
   Ağ yönlendirme problemi; gecikme, bant genişliği kullanımı ve güvenilirlik gibi
