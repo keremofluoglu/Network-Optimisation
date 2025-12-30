@@ -14,7 +14,7 @@ MAX_STEPS = 50          # 50 den 20 ye indirildi
 ALPHA = 0.1             # Öğrenme hızı 
 GAMMA = 0.9             # discount
 
-#EPSILON-GREEDY STRATEJİSİ
+#EPSILON GREEDY STRATEJİSİ
 # keşif  Sömürü dengesi
 EPSILON_START = 1.0     # Başlangıçta %100 rastgele
 EPSILON_END = 0.05      # Minimum keşif oranı
@@ -319,6 +319,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[ERROR] Dosya kaydetme hatasi: {e}")
 """
+
 
 
 
