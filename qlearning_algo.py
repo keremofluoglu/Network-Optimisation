@@ -4,20 +4,17 @@ import random
 import math
 from collections import defaultdict
 
-# ============================================================
 # Q-LEARNING TABANLI AĞ YÖNLENDİRME ALGORİTMASI
 #
 # Bu modül:
-#  - Ağ yönlendirme problemini Reinforcement Learning ile çözer
-#  - Çok kriterli cost modelini reward fonksiyonuna dönüştürür
-#  - Demand bandwidth kısıtını hard constraint olarak uygular
-#  - Tek bir Q-tablosu ile farklı trafik taleplerini destekler
-# ============================================================
+#   Ağ yönlendirme problemini Reinforcement Learning ile çözer
+#   Çok kriterli cost modelini reward fonksiyonuna dönüştürür
+#   Demand bandwidth kısıtını hard constraint olarak uygular
+#   Tek bir Q-tablosu ile farklı trafik taleplerini destekler
 
 
-# ============================================================
+
 # 1. GLOBAL AYARLAR ve HİPERPARAMETRELER
-# ============================================================
 
 # Eğitim parametreleri (GUI için düşük tutulmuştur)
 EPISODES = 500          # Eğitim turu sayısı
@@ -27,19 +24,17 @@ MAX_STEPS = 50          # Bir rotadaki maksimum hop sayısı
 ALPHA = 0.1             # Öğrenme hızı (Learning Rate)
 GAMMA = 0.9             # İndirgeme faktörü (Discount Factor)
 
-# ---------- EPSILON-GREEDY STRATEJİSİ ----------
-# Keşif (exploration) → Sömürü (exploitation) dengesi
+#EPSILON-GREEDY STRATEJİSİ
+# Keşif  Sömürü dengesi
 EPSILON_START = 1.0     # Başlangıçta %100 rastgele
 EPSILON_END = 0.05      # Minimum keşif oranı
 EPSILON_DECAY = 0.99    # Her episode sonrası azalma oranı
 
 
-# ============================================================
 # 2. GLOBAL DEĞİŞKENLER
-# ============================================================
 
-# Q-Tablosu:
-# Q[(current_node, target_node)][next_node] = Q-değeri
+# Q Tablosu
+# Q[(current_node, target_node)][next_node] = Q değeri
 Q = defaultdict(lambda: defaultdict(float))
 
 # Cost fonksiyonu ağırlıkları (GUI üzerinden değiştirilebilir)
@@ -48,20 +43,15 @@ w_r = 1.0   # Resource ağırlığı
 w_u = 1.0   # Reliability ağırlığı
 
 
-# ============================================================
 # 3. NORMALİZASYON ÜST SINIRLARI
-# ============================================================
 
-# Farklı metriklerin aynı reward ölçeğinde etkili olması için
-# maksimum değerler istatistiksel olarak belirlenir
+# Farklı metriklerin aynı reward ölçeğinde etkili olması için maksimum değerler istatistiksel olarak belirlenir
 MAX_DELAY = 100.0
 MAX_RESOURCE = 100.0
 MAX_RELIABILITY = 10.0
 
 
-# ============================================================
 # 4. GRAPH OLUŞTURMA
-# ============================================================
 def build_graph_from_csv(node_csv, edge_csv):
     """
     Node ve Edge CSV dosyalarından NetworkX graph oluşturur
@@ -74,10 +64,10 @@ def build_graph_from_csv(node_csv, edge_csv):
         nodes = pd.read_csv(node_csv, sep=';', decimal=',')
         edges = pd.read_csv(edge_csv, sep=';', decimal=',')
         
-        # ---------- NORMALİZASYON ÜST SINIRLARI ----------
+        #NORMALİZASYON ÜST SINIRLARI
         global MAX_DELAY, MAX_RESOURCE, MAX_RELIABILITY
         
-        # Delay için %95 persentil kullanılır (outlier etkisini azaltır)
+        # Delay için %95 persentil kullanılır
         MAX_DELAY = nodes["s_ms"].quantile(0.95) + edges["delay_ms"].quantile(0.95)
         
         # Resource maliyeti için düşük kapasiteye göre üst sınır
@@ -120,9 +110,7 @@ def build_graph_from_csv(node_csv, edge_csv):
     return G
 
 
-# ============================================================
 # 5. DEMAND VERİLERİ
-# ============================================================
 def load_demands(demand_csv):
     """
     Trafik taleplerini (src, dst, demand_mbps) yükler.
@@ -133,19 +121,14 @@ def load_demands(demand_csv):
         return None
 
 
-# ============================================================
 # 6. REWARD (ÖDÜL) FONKSİYONU
-# ============================================================
-def compute_reward(G, u, v):
-    """
-    Bir aksiyonun (u → v) ödülünü hesaplar.
 
-    Reward = - (Normalize edilmiş toplam maliyet)
-    """
+def compute_reward(G, u, v):
+
     edge = G[u][v]
     node = G.nodes[v]
 
-    # ---------- HAM METRİKLER ----------
+    #HAM METRİKLER
     delay = edge["delay_ms"] + node["s_ms"]
     resource = 1000 / edge["capacity_mbps"] if edge["capacity_mbps"] > 0 else 9999
     
@@ -153,12 +136,12 @@ def compute_reward(G, u, v):
     r_node = node["r_node"] if node["r_node"] > 0 else 0.0001
     reliability = -math.log(r_link) - math.log(r_node)
 
-    # ---------- NORMALİZASYON ----------
+    #NORMALİZASYON
     delay_norm = delay / MAX_DELAY if MAX_DELAY > 0 else 0
     resource_norm = resource / MAX_RESOURCE if MAX_RESOURCE > 0 else 0
     reliability_norm = reliability / MAX_RELIABILITY if MAX_RELIABILITY > 0 else 0
 
-    # ---------- TOTAL COST ----------
+    #TOTAL COST
     total_cost = (
         w_d * delay_norm +
         w_r * resource_norm +
@@ -169,9 +152,7 @@ def compute_reward(G, u, v):
     return -10.0 * total_cost
 
 
-# ============================================================
-# 7. HARD CONSTRAINT: FEASIBLE NEIGHBORS
-# ============================================================
+# 7. HARD CONSTRAINT FEASIBLE NEIGHBORS
 def feasible_neighbors(G, current_node, demand_bw):
     """
     Minimum bandwidth talebini karşılayan komşuları döndürür.
@@ -185,13 +166,10 @@ def feasible_neighbors(G, current_node, demand_bw):
     return valid_neighbors
 
 
-# ============================================================
-# 8. Q-LEARNING EĞİTİM DÖNGÜSÜ
-# ============================================================
+# 8. Q-LEARNING EĞİTİM DÖNGÜS
+
 def train_q_learning(G, demands):
-    """
-    Tek bir Q-tablosu ile birden fazla demand üzerinden eğitim yapar.
-    """
+    
     if isinstance(demands, pd.Series):
         demands = pd.DataFrame([demands])
 
@@ -212,7 +190,7 @@ def train_q_learning(G, demands):
             if not neighbors:
                 break
 
-            # ---------- EPSILON-GREEDY AKSİYON SEÇİMİ ----------
+            #EPSILON GREEDY
             if random.random() < epsilon:
                 next_node = random.choice(neighbors)   # Keşfet
             else:
@@ -224,19 +202,19 @@ def train_q_learning(G, demands):
                 else:
                     next_node = random.choice(neighbors)
 
-            # ---------- ÖDÜL ----------
+            # ödül hesaplama
             reward = compute_reward(G, current, next_node)
             if next_node == target:
                 reward += 100  # Hedefe ulaşma bonusu
 
-            # ---------- GELECEK ÖDÜL ----------
+            #GELECEK ÖDÜL
             best_future = 0
             if (next_node, target) in Q:
                 vals = Q[(next_node, target)].values()
                 if vals:
                     best_future = max(vals)
 
-            # ---------- Q-GÜNCELLEME ----------
+            # Q-GÜNCELLEME
             Q[(current, target)][next_node] += ALPHA * (
                 reward + GAMMA * best_future - Q[(current, target)][next_node]
             )
@@ -249,9 +227,8 @@ def train_q_learning(G, demands):
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
 
 
-# ============================================================
-# 9. POLICY ÇIKARIMI ve ROTA BULMA
-# ============================================================
+# 9. POLICY ÇIKARIMI ve ROTA BULM
+
 def extract_policy(Q):
     """
     Q-tablosundan greedy policy çıkarır.
@@ -280,3 +257,4 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
