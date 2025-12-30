@@ -235,6 +235,91 @@ def get_best_path(policy, src, dst, max_hops=50):
 
     return path
 
+#STANDART ÇALIŞMA (GUI İÇİN)
+if __name__ == "__main__":
+    G = build_graph_from_csv("nodedata.csv", "edgedata.csv")
+    demands = load_demands("demanddata.csv")
+    if G and demands is not None:
+        train_q_learning(G, demands)
+        print("Modül Hazır.")
+
+#  OTOMATİK TEST VE RAPORLAMA KODLARI
+#  Bu bölüm sadece dosya doğrudan çalıştırıldığında çalışır.
+
+"""
+import time
+
+if __name__ == "__main__":
+    print("\\n[INFO] QL Otomatik test sureci baslatiliyor (Kapsam: 20 Senaryo x 5 Tekrar)...")
+    
+    # --- KRİTİK NOKTA: TEST İÇİN ZEKA SEVİYESİNİ ARTIRIYORUZ ---
+    # Normalde arayüz donmasın diye 500 kullanıyoruz.
+    # Ama Excel raporunda rotalar KISA ve DOĞRU çıksın diye
+    # burada geçici olarak Kerem'in kullandığı sayıya (20.000) çıkarıyoruz.
+    globals()['EPISODES'] = 20000 
+    
+    # Testler için global G nesnesini yükle
+    G = build_graph_from_csv("nodedata.csv", "edgedata.csv")
+    demands = load_demands("demanddata.csv")
+
+    test_results = []
+
+    # Deney Tekrar Döngüsü (5 Tekrar)
+    for repetition in range(1, 6):
+        print(f"\\n[INFO] Deney Seti: {repetition}/5 calistiriliyor. (20.000 Tur Egitim - Lutfen Bekleyiniz)...")
+        
+        # Q-Table Sifirlama ve Modelin Yeniden Egitilmesi
+        Q.clear() 
+        train_q_learning(G, demands)
+        policy = extract_policy(Q)
+        
+        # Ilk 20 Senaryonun Test Edilmesi
+        for i in range(20):
+            try:
+                row = demands.iloc[i]
+                src = int(row["src"])
+                dst = int(row["dst"])
+                bw = row["demand_mbps"]
+                
+                # Performans Olcumu (Sure)
+                start_time = time.time()
+                # max_hops=50 sınırı koyuyoruz ki sonsuz döngü olmasın
+                path = get_best_path(policy, src, dst, max_hops=50)
+                end_time = time.time()
+                
+                raw_duration = end_time - start_time
+                duration_tr = f"{raw_duration:.6f}".replace('.', ',')
+                
+                result_record = {
+                    "Algoritma": "Q-Learning",
+                    "Tekrar_No": repetition,
+                    "Senaryo_ID": i,
+                    "Kaynak_Node": src,
+                    "Hedef_Node": dst,
+                    "Talep_Mbps": bw,
+                    "Bulunan_Rota": str(path),
+                    "Rota_Uzunlugu": len(path) - 1,
+                    "Islem_Suresi_sn": duration_tr
+                }
+                test_results.append(result_record)
+                
+                # Ekrana sade bilgi basıyoruz
+                print(f"   -> Senaryo {i} bitti. Rota Uzunlugu: {len(path)-1} (Sure: {duration_tr}s)")
+                
+            except Exception as e:
+                print(f"   [ERROR] Senaryo {i} sirasinda hata olustu: {e}")
+
+    # --- SONUÇLARI KAYDET ---
+    print("\\n[INFO] Test sonuclari CSV dosyasina yaziliyor...")
+    try:
+        df_results = pd.DataFrame(test_results)
+        output_filename = "QLearning_Final_Test_Sonuclari_TR.csv"
+        df_results.to_csv(output_filename, sep=";", index=False)
+        print(f"[SUCCESS] Islem basariyla tamamlandi. Yeni dosya: {output_filename}")
+    except Exception as e:
+        print(f"[ERROR] Dosya kaydetme hatasi: {e}")
+"""
+
 
 
 
