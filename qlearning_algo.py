@@ -7,12 +7,12 @@ from collections import defaultdict
 # Q LEARNING TABANLI AĞ OPTİMİSATİON ALGORİTMASI
 
 # Eğitim parametreleri (GUI için düşük tutulmuştur)
-EPISODES = 500          # Eğitim turu sayısı   20 000 den 500 e indirild
-MAX_STEPS = 50          # Bir rotadaki maksimum hop sayısı
+EPISODES = 500          # 20 000 den 500 e indirild
+MAX_STEPS = 50          # 50 den 20 ye indirildi
 
 # Q-Learning parametreleri
-ALPHA = 0.1             # Öğrenme hızı (Learning Rate)
-GAMMA = 0.9             # İndirgeme faktörü (Discount Factor)
+ALPHA = 0.1             # Öğrenme hızı 
+GAMMA = 0.9             # discount
 
 #EPSILON-GREEDY STRATEJİSİ
 # Keşif  Sömürü dengesi
@@ -167,7 +167,7 @@ def train_q_learning(G, demands):
         demand_bw = float(d["demand_mbps"])
 
         for _ in range(MAX_STEPS):
-            neighbors = feasible_neighbors(G, current, demand_bw)
+            neighbors = feasible_neighbors(G, current, demand_bw) # eğer bu node'dan uygun çıkış yoksa episode burada bitiyor
             if not neighbors:
                 break
 
@@ -234,5 +234,6 @@ def get_best_path(policy, src, dst, max_hops=50):
         current = next_node
 
     return path
+
 
 
