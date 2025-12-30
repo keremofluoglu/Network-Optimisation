@@ -4,22 +4,14 @@ import random
 import math
 import time  # Algoritmanın çalışma süresini ölçmek için kullanılır
 
-# =========================================================
-#  YARDIMCI SINIF: NETWORK
 #  Ağ topolojisini (node ve edge’ler) yüklemekten sorumlu
-# =========================================================
 class Network:
     def __init__(self):
         # NetworkX graph yapısı
         self.G = nx.Graph()
         
     def load_nodes(self, path):
-        """
-        Node bilgilerini CSV dosyasından okur ve graf yapısına ekler.
-        Node özellikleri:
-        - s_ms     : Node işlem gecikmesi
-        - r_node  : Node güvenilirliği
-        """
+
         try:
             df = pd.read_csv(path, delimiter=";", decimal=",")
             for _, row in df.iterrows():
@@ -32,13 +24,7 @@ class Network:
             print(f"Node okuma hatası: {e}")
 
     def load_edges(self, path):
-        """
-        Edge bilgilerini CSV dosyasından okur ve graf yapısına ekler.
-        Edge özellikleri:
-        - capacity_mbps : Bant genişliği kapasitesi
-        - delay_ms      : Link gecikmesi
-        - r_link        : Link güvenilirliği
-        """
+
         try:
             df = pd.read_csv(path, delimiter=";", decimal=",")
             for _, row in df.iterrows():
@@ -52,11 +38,8 @@ class Network:
         except Exception as e:
             print(f"Edge okuma hatası: {e}")
 
-# =========================================================
-#  ANA SINIF: GENETİK ALGORİTMA
-#  Amaç: Talep edilen bant genişliğini sağlayan
-#        en düşük maliyetli yolu bulmak
-# =========================================================
+#GENETİK ALGORİTMA
+
 class GeneticAlgorithm:
     def __init__(
         self, network, source, dest, demand,
@@ -109,13 +92,7 @@ class GeneticAlgorithm:
             return []
 
     def fitness(self, individual):
-        """
-        Fitness (cost) fonksiyonu:
-        - Gecikme
-        - Güvenilirlik (log dönüşümü)
-        - Kaynak kullanımı
-        Bant genişliği kısıtı hard constraint olarak uygulanır.
-        """
+
         # Geçersiz yol kontrolü
         if not individual or individual[0] != self.source or individual[-1] != self.dest:
             return float('inf')
@@ -167,10 +144,7 @@ class GeneticAlgorithm:
         return cost
 
     def crossover(self, parent1, parent2):
-        """
-        İki ebeveyn yol arasında ortak bir node seçerek
-        crossover işlemi uygular.
-        """
+
         common_nodes = [
             node for node in parent1
             if node in parent2 and node != self.source and node != self.dest
@@ -192,19 +166,12 @@ class GeneticAlgorithm:
         return child
 
     def mutate(self, individual):
-        """
-        Mutasyon işlemi:
-        Bireyi tamamen yeni bir yol ile değiştirmeyi dener.
-        """
+
         return self.create_individual()
 
     def run(self):
-        """
-        Genetik Algoritmanın ana çalıştırma fonksiyonu
-        """
-        # -------------------------------------------------
+
         # 1) BAŞLANGIÇ POPÜLASYONU OLUŞTURMA
-        # -------------------------------------------------
         population = []
         try:
             # Gecikmeye göre en kısa alternatif yollar üretilir
@@ -225,9 +192,8 @@ class GeneticAlgorithm:
         if not population:
             return []
 
-        # -------------------------------------------------
+
         # 2) JENERASYON DÖNGÜSÜ
-        # -------------------------------------------------
         for _ in range(self.generations):
             # Fitness’a göre sırala (küçük daha iyi)
             population.sort(key=self.fitness)
@@ -258,3 +224,4 @@ class GeneticAlgorithm:
         # En iyi yolu döndür
         best_path = min(population, key=self.fitness)
         return best_path
+
