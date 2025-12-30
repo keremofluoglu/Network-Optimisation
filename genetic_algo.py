@@ -2,12 +2,12 @@ import pandas as pd
 import networkx as nx
 import random
 import math
-import time  # Algoritmanın çalışma süresini ölçmek için kullanılır
+import time  # algoritmanın çalışma süresini ölçmek için kullanılır
 
-#  Ağ topolojisini (node ve edge’ler) yüklemekten sorumlu
+#  ağ topolojisini (node ve edge’ler) yüklemekten sorumlu
 class Network:
     def __init__(self):
-        # NetworkX graph yapısı
+        # networkX graph yapısı
         self.G = nx.Graph()
         
     def load_nodes(self, path):
@@ -46,40 +46,37 @@ class GeneticAlgorithm:
         pop_size=20, generations=10, mutation_rate=0.1,
         w_delay=0.33, w_rel=0.33, w_res=0.34
     ):
-        # Ağ bilgileri
+        # ağ bilgileri
         self.network = network
         self.G = network.G
         
-        # Routing bilgileri
+        # routing bilgileri
         self.source = source
         self.dest = dest
-        self.demand = demand  # Minimum gerekli bant genişliği
+        self.demand = demand  # minimum gerekli bant genişliği
         
         # GA parametreleri
-        self.pop_size = pop_size          # Popülasyon büyüklüğü
-        self.generations = generations    # Jenerasyon sayısı
+        self.pop_size = pop_size          # popülasyon büyüklüğü
+        self.generations = generations    # jenerasyon sayısı
         self.mutation_rate = mutation_rate
         
-        # Cost ağırlıkları (arayüzden değiştirilebilir)
+        # cost ağırlıkları (arayüzden değiştirilebilir)
         self.w_delay = w_delay
         self.w_rel = w_rel
         self.w_res = w_res
         
-        # Normalizasyon için üst sınırlar
+        # normalizasyon için üst sınırlar
         self.max_delay = 50
         self.max_res = 10
 
     def create_individual(self):
-        """
-        Rastgele fakat geçerli bir yol (birey) üretir.
-        Başlangıç olarak en kısa yolu alır, küçük bir varyasyon dener.
-        """
+
         try:
             path = nx.shortest_path(
                 self.G, self.source, self.dest, weight='delay_ms'
             )
             
-            # Yol üzerinde küçük bir rastgele değişiklik denemesi
+            # yol üzerinde küçük bir rastgele değişiklik denemesi
             if len(path) > 3:
                 idx = random.randint(1, len(path)-2)
                 neighbors = list(self.G.neighbors(path[idx-1]))
@@ -93,7 +90,7 @@ class GeneticAlgorithm:
 
     def fitness(self, individual):
 
-        # Geçersiz yol kontrolü
+        # geçersiz yol kontrolü
         if not individual or individual[0] != self.source or individual[-1] != self.dest:
             return float('inf')
         
@@ -101,31 +98,31 @@ class GeneticAlgorithm:
         total_rel_log = 0
         total_res = 0
         
-        # Edge bazlı maliyet hesapları
+        # edge bazlı maliyet hesapları
         for i in range(len(individual) - 1):
             u, v = individual[i], individual[i+1]
             data = self.G.get_edge_data(u, v)
             if not data:
                 return float('inf')
             
-            # HARD CONSTRAINT: Bant genişliği yetersizse yol geçersiz
+            # bant genişliği yetersizse yol geçersiz
             if data.get('capacity_mbps', 0) < self.demand:
                 return float('inf')
             
-            # Gecikme
+            # gecikme
             total_delay += data.get('delay_ms', 0)
             
-            # Güvenilirlik (log dönüşümü ile çarpan etkisi azaltılır)
+            # güvenilirlik (log dönüşümü ile çarpan etkisi azaltılır)
             r_val = data.get('r_link', 0.99)
             if r_val <= 0:
                 r_val = 0.0001
             total_rel_log += -math.log(r_val)
             
-            # Kaynak kullanımı (kapasite azaldıkça ceza artar)
+            # kaynak kullanımı (kapasite azaldıkça ceza artar)
             cap = data.get('capacity_mbps', 1)
             total_res += (1000 / cap)
             
-        # Node bazlı maliyetler
+        # node bazlı maliyetler
         for node in individual:
             ndata = self.G.nodes[node]
             total_delay += ndata.get('s_ms', 0)
@@ -135,7 +132,7 @@ class GeneticAlgorithm:
                 nr_val = 0.0001
             total_rel_log += -math.log(nr_val)
 
-        # Ağırlıklı toplam maliyet
+        # ağırlıklı toplam maliyet
         cost = (
             self.w_delay * total_delay +
             self.w_rel * total_rel_log * 100 +
@@ -159,7 +156,7 @@ class GeneticAlgorithm:
         
         child = parent1[:idx1] + parent2[idx2:]
         
-        # Döngü oluşmasını engelle
+        # döngü oluşmasını engelle
         if len(child) != len(set(child)):
             return parent1
         
@@ -171,10 +168,10 @@ class GeneticAlgorithm:
 
     def run(self):
 
-        # 1) BAŞLANGIÇ POPÜLASYONU OLUŞTURMA
+        # BAŞLANGIÇ POPÜLASYONU OLUŞTURMA
         population = []
         try:
-            # Gecikmeye göre en kısa alternatif yollar üretilir
+            # gecikmeye göre en kısa alternatif yollar üretilir
             k_paths_generator = nx.shortest_simple_paths(
                 self.G, self.source, self.dest, weight='delay_ms'
             )
@@ -193,19 +190,19 @@ class GeneticAlgorithm:
             return []
 
 
-        # 2) JENERASYON DÖNGÜSÜ
+        #JENERASYON DÖNGÜSÜ
         for _ in range(self.generations):
-            # Fitness’a göre sırala (küçük daha iyi)
+            # fitnessa göre sırala 
             population.sort(key=self.fitness)
             
-            # Elitizm: En iyi %50 korunur
+            # elitizimde en iyi %50 korunur
             new_population = population[:int(len(population)/2)]
             
             if len(new_population) < 2:
                 population = new_population
                 break
 
-            # Crossover + Mutasyon ile yeni bireyler üret
+            # crossover + mutasyon ile yeni bireyler üret
             while len(new_population) < self.pop_size:
                 p1 = random.choice(new_population)
                 p2 = random.choice(new_population)
@@ -221,7 +218,8 @@ class GeneticAlgorithm:
             
             population = new_population
 
-        # En iyi yolu döndür
+        # en iyi yolu döndür
         best_path = min(population, key=self.fitness)
         return best_path
+
 
